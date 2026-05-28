@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Patinafeob – UNIFEOB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#F0F4F8;font-family:'Segoe UI',system-ui,sans-serif;display:flex;justify-content:center;}
+  #root{width:100%;max-width:430px;min-height:100vh;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const C={navy:"#0D2B55",teal:"#00C9A7",tealDark:"#00957C",tealLight:"#E0FAF5",blue:"#1565C0",white:"#FFFFFF",bg:"#F0F4F8",text:"#0D2B55",muted:"#6B7FA3",red:"#E53E3E",orange:"#F6AD55",green:"#38A169",border:"#D6E4F0"};
+
+const SCOOTERS=[
+  {id:"PT-01",bloco:"Bloco A → B",bat:82,status:"DISPONÍVEL"},
+  {id:"PT-02",bloco:"Bloco B → C",bat:67,status:"DISPONÍVEL"},
+  {id:"PT-03",bloco:"Bloco C → D",bat:45,status:"DISPONÍVEL"},
+  {id:"PT-04",bloco:"Bloco D → E",bat:12,status:"EM MANUTENÇÃO"},
+  {id:"PT-05",bloco:"Bloco A → F",bat:91,status:"RESERVADO"},
+  {id:"PT-06",bloco:"Bloco E → F",bat:55,status:"DISPONÍVEL"},
+];
+const STATIONS=[
+  {id:"EST-A",name:"Estação Bloco A",vagas:3,total:5},
+  {id:"EST-B",name:"Estação Bloco B",vagas:1,total:4},
+  {id:"EST-C",name:"Estação Bloco C",vagas:4,total:6},
+  {id:"EST-D",name:"Estação Bloco D",vagas:0,total:4},
+  {id:"EST-E",name:"Estação Bloco E",vagas:2,total:5},
+  {id:"EST-F",name:"Estação Bloco F",vagas:3,total:4},
+];
+const HISTORY=[
+  {id:1,date:"26/05/2026",from:"Bloco A",to:"Bloco C",time:"8 min",bat:"6%"},
+  {id:2,date:"24/05/2026",from:"Bloco D",to:"Bloco B",time:"12 min",bat:"9%"},
+  {id:3,date:"22/05/2026",from:"Bloco F",to:"Bloco A",time:"5 min",bat:"4%"},
+];
+
+const DB={
+  _users:[{name:"Cleia Gomes",ra:"26000922",email:"cleia.gomes@unifeob.edu.br",curso:"Engenharia Civil",turno:"noturno",senha:"123456"}],
+  find(id,senha){return this._users.find(u=>(u.email===id.toLowerCase().trim()||u.ra===id.trim())&&u.senha===senha)||null;},
+  exists(email,ra){return this._users.find(u=>u.email===email.toLowerCase().trim()||u.ra===ra.trim());},
+  add(u){this._users.push(u);}
+};
+
+function isInstitutional(e){return e.trim().toLowerCase().endsWith("@unifeob.edu.br");}
+function isRA(r){return /^\d{8}$/.test(r.trim());}
+function isHorario(){const h=new Date().getHours();return h>=7&&h<22;}
+function batColor(n){if(n>=50)return C.green;if(n>=20)return C.orange;return C.red;}
+function statusColor(s){if(s==="DISPONÍVEL")return C.teal;if(s==="RESERVADO")return C.orange;if(s==="EM USO")return C.blue;return C.red;}
+
+const S={
+  phone:{width:"100%",maxWidth:430,minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",position:"relative"},
+  header:{background:`linear-gradient(135deg,${C.navy} 0%,#1a3a6e 100%)`,padding:"18px 20px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0},
+  scroll:{flex:1,overflowY:"auto",padding:"16px 16px 80px"},
+  navBar:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-around",padding:"8px 0 10px",boxShadow:"0 -2px 12px rgba(0,0,0,0.08)"},
+  card:{background:C.white,borderRadius:14,padding:"14px 16px",marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",border:`1px solid ${C.border}`},
+  btn:(v="primary")=>({width:"100%",padding:"13px 0",borderRadius:12,border:"none",cursor:"pointer",fontWeight:700,fontSize:15,background:v==="primary"?`linear-gradient(135deg,${C.teal} 0%,${C.tealDark} 100%)`:v==="danger"?C.red:C.border,color:v==="ghost"?C.text:C.white,marginTop:8}),
+  btnSm:(v="primary")=>({padding:"7px 14px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:v==="primary"?`linear-gradient(135deg,${C.teal} 0%,${C.tealDark} 100%)`:C.border,color:C.white}),
+  input:{width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${C.border}`,fontSize:14,color:C.text,background:"#F8FAFC",outline:"none",boxSizing:"border-box",marginTop:6,marginBottom:4},
+  label:{fontSize:12,fontWeight:600,color:C.muted,letterSpacing:0.4,display:"block",marginTop:12},
+  badge:(color)=>({background:color+"22",color:color,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}),
+  sectionTitle:{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:"uppercase",margin:"0 0 10px"},
+};
+
+function BatteryIcon({bat}){
+  const color=batColor(bat);
+  return <svg width="32" height="16" viewBox="0 0 32 16">
+    <rect x="0" y="1" width="28" height="14" rx="3" fill="none" stroke={color} strokeWidth="2"/>
+    <rect x="1.5" y="2.5" width={Math.max(1,(bat/100)*25)} height="11" rx="2" fill={color}/>
+    <rect x="28.5" y="5" width="3" height="6" rx="1.5" fill={color}/>
+  </svg>;
+}
+
+function LoginScreen({onLogin,onCadastro}){
+  const [tab,setTab]=React.useState("email");
+  const [email,setEmail]=React.useState("");
+  const [ra,setRa]=React.useState("");
+  const [senha,setSenha]=React.useState("");
+  const [err,setErr]=React.useState("");
+  const [loading,setLoading]=React.useState(false);
+
+  function handleLogin(){
+    setErr("");
+    if(!isHorario()){setErr("⏰ Sistema disponível apenas entre 07h e 22h.");return;}
+    const cred=tab==="email"?email.trim():ra.trim();
+    if(tab==="email"&&!isInstitutional(email)){setErr("Use seu e-mail @unifeob.edu.br");return;}
+    if(tab==="ra"&&!isRA(ra)){setErr("RA deve ter 8 dígitos numéricos.");return;}
+    if(senha.length<4){setErr("Senha muito curta.");return;}
+    setLoading(true);
+    setTimeout(()=>{
+      setLoading(false);
+      const found=DB.find(cred,senha);
+      if(!found){setErr("E-mail/RA ou senha incorretos.");return;}
+      onLogin(found);
+    },1000);
+  }
+
+  return <div style={{...S.phone,background:`linear-gradient(160deg,${C.navy} 0%,#1a3a6e 55%,${C.bg} 100%)`}}>
+    <div style={{padding:"48px 32px 24px",textAlign:"center"}}>
+      <div style={{fontSize:44,marginBottom:4}}>🛴</div>
+      <div style={{color:C.teal,fontSize:28,fontWeight:800,letterSpacing:1}}>Patinafeob</div>
+      <div style={{color:"rgba(255,255,255,0.6)",fontSize:12,marginTop:4}}>Sistema de Mobilidade · UNIFEOB 2026</div>
+    </div>
+    <div style={{background:C.white,borderRadius:"24px 24px 0 0",flex:1,padding:"28px 24px",display:"flex",flexDirection:"column",gap:4}}>
+      <div style={{fontSize:20,fontWeight:700,color:C.text,marginBottom:16}}>Entrar</div>
+      <div style={{display:"flex",background:C.bg,borderRadius:10,padding:3,marginBottom:8}}>
+        {[["email","E-mail Institucional"],["ra","RA"]].map(([k,label])=>(
+          <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"7px 0",border:"none",borderRadius:8,cursor:"pointer",background:tab===k?C.white:"transparent",color:tab===k?C.navy:C.muted,fontWeight:tab===k?700:400,fontSize:13}}>{label}</button>
+        ))}
+      </div>
+      {tab==="email"?<>
+        <label style={S.label}>E-mail</label>
+        <input style={S.input} placeholder="nome@unifeob.edu.br" value={email} onChange={e=>setEmail(e.target.value)} type="email"/>
+      </>:<>
+        <label style={S.label}>Registro Acadêmico (RA)</label>
+        <input style={S.input} placeholder="Ex: 26000922" value={ra} onChange={e=>setRa(e.target.value)} maxLength={8}/>
+      </>}
+      <label style={S.label}>Senha</label>
+      <input style={S.input} placeholder="••••••••" value={senha} onChange={e=>setSenha(e.target.value)} type="password"/>
+      {err&&<div style={{background:"#FFF5F5",border:`1px solid ${C.red}`,borderRadius:8,padding:"10px 14px",color:C.red,fontSize:13,marginTop:4}}>{err}</div>}
+      <button style={S.btn()} onClick={handleLogin} disabled={loading}>{loading?"Verificando...":"Entrar"}</button>
+      <div style={{textAlign:"center",marginTop:14}}>
+        <span style={{color:C.muted,fontSize:13}}>Ainda não tem conta? </span>
+        <button onClick={onCadastro} style={{background:"none",border:"none",cursor:"pointer",color:C.teal,fontWeight:700,fontSize:13,padding:0}}>Criar conta gratuita →</button>
+      </div>
+      <div style={{textAlign:"center",marginTop:10,color:C.muted,fontSize:11}}>Acesso exclusivo — comunidade UNIFEOB<br/>Gratuito · Sustentável · Campus Mantiqueira</div>
+    </div>
+  </div>;
+}
+
+function CadastroScreen({onCadastrado,onVoltar}){
+  const [nome,setNome]=React.useState("");
+  const [ra,setRa]=React.useState("");
+  const [email,setEmail]=React.useState("");
+  const [curso,setCurso]=React.useState("");
+  const [turno,setTurno]=React.useState("noturno");
+  const [senha,setSenha]=React.useState("");
+  const [confirma,setConfirma]=React.useState("");
+  const [err,setErr]=React.useState("");
+  const [sucesso,setSucesso]=React.useState(false);
+  const [loading,setLoading]=React.useState(false);
+  const cursos=["Engenharia Civil","Engenharia de Produção","Administração","Direito","Psicologia","Outro"];
+
+  function handleCadastro(){
+    setErr("");
+    if(!nome.trim()||nome.trim().split(" ").length<2){setErr("Informe nome completo.");return;}
+    if(!isRA(ra)){setErr("RA deve ter 8 dígitos.");return;}
+    if(!isInstitutional(email)){setErr("E-mail deve ser @unifeob.edu.br");return;}
+    if(!curso){setErr("Selecione seu curso.");return;}
+    if(senha.length<6){setErr("Senha deve ter ao menos 6 caracteres.");return;}
+    if(senha!==confirma){setErr("As senhas não coincidem.");return;}
+    if(DB.exists(email,ra)){setErr("E-mail ou RA já cadastrado.");return;}
+    setLoading(true);
+    setTimeout(()=>{
+      const u={name:nome.trim(),ra:ra.trim(),email:email.toLowerCase().trim(),curso,turno,senha};
+      DB.add(u);setLoading(false);setSucesso(true);
+      setTimeout(()=>onCadastrado(u),1800);
+    },1200);
+  }
+
+  if(sucesso)return <div style={{...S.phone,background:`linear-gradient(160deg,${C.navy} 0%,#1a3a6e 100%)`,alignItems:"center",justifyContent:"center"}}>
+    <div style={{textAlign:"center",padding:32}}>
+      <div style={{fontSize:64,marginBottom:16}}>🎉</div>
+      <div style={{color:C.teal,fontSize:22,fontWeight:800}}>Cadastro realizado!</div>
+      <div style={{color:"rgba(255,255,255,0.7)",fontSize:13,marginTop:8}}>Bem-vindo(a) ao Patinafeob, {nome.split(" ")[0]}!</div>
+    </div>
+  </div>;
+
+  return <div style={{...S.phone,background:`linear-gradient(160deg,${C.navy} 0%,#1a3a6e 45%,${C.bg} 100%)`}}>
+    <div style={{padding:"36px 24px 20px",display:"flex",alignItems:"center",gap:12}}>
+      <button onClick={onVoltar} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:10,color:C.white,fontSize:18,cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+      <div>
+        <div style={{color:C.teal,fontSize:22,fontWeight:800}}>Criar conta</div>
+        <div style={{color:"rgba(255,255,255,0.55)",fontSize:11}}>Patinafeob · UNIFEOB</div>
+      </div>
+    </div>
+    <div style={{background:C.white,borderRadius:"24px 24px 0 0",flex:1,overflowY:"auto",padding:"24px 24px 40px"}}>
+      <label style={S.label}>Nome completo *</label>
+      <input style={S.input} placeholder="Ex: Cleia Gomes Camargos" value={nome} onChange={e=>setNome(e.target.value)}/>
+      <label style={S.label}>Registro Acadêmico (RA) *</label>
+      <input style={S.input} placeholder="Ex: 26000922" maxLength={8} value={ra} onChange={e=>setRa(e.target.value.replace(/\D/g,""))}/>
+      <label style={S.label}>E-mail institucional *</label>
+      <input style={S.input} placeholder="nome@unifeob.edu.br" type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
+      <label style={S.label}>Curso *</label>
+      <select style={{...S.input,appearance:"none"}} value={curso} onChange={e=>setCurso(e.target.value)}>
+        <option value="">Selecione seu curso</option>
+        {cursos.map(c=><option key={c} value={c}>{c}</option>)}
+      </select>
+      <label style={S.label}>Turno *</label>
+      <div style={{display:"flex",gap:8,marginTop:6}}>
+        {[["matutino","☀️ Matutino"],["vespertino","🌤️ Vespertino"],["noturno","🌙 Noturno"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setTurno(v)} style={{flex:1,padding:"9px 4px",border:`1.5px solid ${turno===v?C.teal:C.border}`,borderRadius:10,cursor:"pointer",fontSize:11,fontWeight:turno===v?700:400,background:turno===v?C.tealLight:"#F8FAFC",color:turno===v?C.tealDark:C.muted}}>{l}</button>
+        ))}
+      </div>
+      <label style={S.label}>Senha *</label>
+      <input style={S.input} placeholder="Mínimo 6 caracteres" type="password" value={senha} onChange={e=>setSenha(e.target.value)}/>
+      <label style={S.label}>Confirmar senha *</label>
+      <input style={{...S.input,borderColor:confirma&&confirma!==senha?C.red:confirma&&confirma===senha?C.teal:C.border}} placeholder="Repita a senha" type="password" value={confirma} onChange={e=>setConfirma(e.target.value)}/>
+      {err&&<div style={{background:"#FFF5F5",border:`1px solid ${C.red}`,borderRadius:8,padding:"10px 14px",color:C.red,fontSize:13,marginTop:8}}>❌ {err}</div>}
+      <div style={{background:C.tealLight,borderRadius:10,padding:"10px 14px",color:C.tealDark,fontSize:11,marginTop:14,fontWeight:500}}>
+        🎓 Cadastro 100% gratuito — exclusivo para alunos e professores da UNIFEOB Campus Mantiqueira
+      </div>
+      <button style={S.btn()} onClick={handleCadastro} disabled={loading}>{loading?"Criando conta...":"Criar conta gratuita"}</button>
+      <button style={{...S.btn("ghost"),marginTop:6}} onClick={onVoltar}>Já tenho conta — Entrar</button>
+    </div>
+  </div>;
+}
+
+function MapScreen({onReserve}){
+  const available=SCOOTERS.filter(s=>s.status==="DISPONÍVEL");
+  return <div style={S.scroll}>
+    <div style={{...S.card,background:`linear-gradient(135deg,${C.navy} 0%,#1a3a6e 100%)`,padding:16,marginBottom:16}}>
+      <div style={{color:C.teal,fontSize:11,fontWeight:700,letterSpacing:0.8}}>CAMPUS MANTIQUEIRA</div>
+      <div style={{color:C.white,fontSize:13,marginTop:4}}>120.000 m² · 6 estações · {available.length} patinetes disponíveis</div>
+      <div style={{marginTop:12,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+        {STATIONS.map(st=>(
+          <div key={st.id} style={{background:st.vagas>0?"rgba(0,201,167,0.2)":"rgba(229,62,62,0.2)",border:`1px solid ${st.vagas>0?C.teal:C.red}`,borderRadius:8,padding:"7px 6px",textAlign:"center"}}>
+            <div style={{color:C.white,fontSize:10,fontWeight:700}}>{st.id}</div>
+            <div style={{color:st.vagas>0?C.teal:C.red,fontSize:11,fontWeight:600}}>{st.vagas}/{st.total}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{color:"rgba(255,255,255,0.5)",fontSize:10,marginTop:8}}>Verde = vagas disponíveis · Vermelho = lotado</div>
+    </div>
+    <p style={S.sectionTitle}>Patinetes Disponíveis ({available.length})</p>
+    {SCOOTERS.map(sc=>(
+      <div key={sc.id} style={{...S.card,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:44,height:44,borderRadius:12,background:sc.status==="DISPONÍVEL"?C.tealLight:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:22}}>🛴</div>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontWeight:700,color:C.text,fontSize:15}}>{sc.id}</span>
+            <span style={S.badge(statusColor(sc.status))}>{sc.status}</span>
+          </div>
+          <div style={{color:C.muted,fontSize:12,margin:"3px 0 6px"}}>{sc.bloco}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <BatteryIcon bat={sc.bat}/>
+            <span style={{fontSize:12,fontWeight:600,color:batColor(sc.bat)}}>{sc.bat}%</span>
+          </div>
+        </div>
+        {sc.status==="DISPONÍVEL"&&sc.bat>=15&&(
+          <button style={S.btnSm()} onClick={()=>onReserve(sc)}>Reservar</button>
+        )}
+      </div>
+    ))}
+  </div>;
+}
+
+function ReservaScreen({scooter,onConfirm,onCancel}){
+  const [seg,setSeg]=React.useState(300);
+  React.useEffect(()=>{
+    if(seg<=0){onCancel();return;}
+    const t=setTimeout(()=>setSeg(s=>s-1),1000);
+    return()=>clearTimeout(t);
+  },[seg]);
+  const mm=String(Math.floor(seg/60)).padStart(2,"0");
+  const ss=String(seg%60).padStart(2,"0");
+  const pct=(seg/300)*100;
+  return <div style={S.scroll}>
+    <div style={{...S.card,textAlign:"center",padding:"28px 20px"}}>
+      <div style={{fontSize:48,marginBottom:8}}>🛴</div>
+      <div style={{fontSize:22,fontWeight:800,color:C.text}}>{scooter.id}</div>
+      <div style={{color:C.muted,fontSize:13,margin:"4px 0 20px"}}>{scooter.bloco}</div>
+      <div style={{position:"relative",width:110,height:110,margin:"0 auto 20px"}}>
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="48" fill="none" stroke={C.border} strokeWidth="8"/>
+          <circle cx="55" cy="55" r="48" fill="none" stroke={C.teal} strokeWidth="8"
+            strokeDasharray={`${2*Math.PI*48}`}
+            strokeDashoffset={`${2*Math.PI*48*(1-pct/100)}`}
+            strokeLinecap="round" transform="rotate(-90 55 55)"
+            style={{transition:"stroke-dashoffset 1s linear"}}/>
+        </svg>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:22,fontWeight:800,color:C.text}}>{mm}:{ss}</div>
+      </div>
+      <div style={{color:C.orange,fontWeight:600,fontSize:13,marginBottom:20}}>⚠️ Reserva expira em {mm}:{ss} min</div>
+      <div style={{display:"flex",gap:8}}>
+        <button style={{...S.btn("ghost"),marginTop:0,flex:1}} onClick={onCancel}>Cancelar</button>
+        <button style={{...S.btn(),marginTop:0,flex:1}} onClick={onConfirm}>Retirar via QR</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function QRScreen({scooter,onScan}){
+  const [scanning,setScanning]=React.useState(false);
+  React.useEffect(()=>{if(scanning){const t=setTimeout(onScan,2000);return()=>clearTimeout(t);}},[scanning]);
+  return <div style={S.scroll}>
+    <div style={{...S.card,textAlign:"center",padding:"32px 20px"}}>
+      <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Escaneie o QR do patinete</div>
+      <div style={{color:C.muted,fontSize:12,marginBottom:24}}>Aproxime a câmera do código fixado no guidão</div>
+      <div style={{width:160,height:160,margin:"0 auto 24px",border:`3px solid ${scanning?C.teal:C.navy}`,borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",background:"#F8FAFC",fontSize:60}}>
+        {scanning?"✅":"📷"}
+      </div>
+      <div style={{color:C.muted,fontSize:12,marginBottom:24}}>Patinete: <strong style={{color:C.text}}>{scooter.id}</strong></div>
+      {scanning?<div style={{color:C.teal,fontWeight:700,fontSize:14}}>✓ Lendo código...</div>
+        :<button style={S.btn()} onClick={()=>setScanning(true)}>📱 Simular Leitura QR</button>}
+    </div>
+  </div>;
+}
+
+function UsoScreen({scooter,onDevolver}){
+  const [seg,setSeg]=React.useState(0);
+  React.useEffect(()=>{const t=setInterval(()=>setSeg(s=>s+1),1000);return()=>clearInterval(t);},[]);
+  const mm=String(Math.floor(seg/60)).padStart(2,"0");
+  const ss=String(seg%60).padStart(2,"0");
+  const pct=Math.min(100,(seg/1800)*100);
+  const alert25=seg>=1500,alert28=seg>=1680;
+  return <div style={S.scroll}>
+    <div style={{...S.card,textAlign:"center",padding:"28px 20px"}}>
+      <div style={{color:C.teal,fontWeight:700,fontSize:11,letterSpacing:1,marginBottom:8}}>EM ANDAMENTO</div>
+      <div style={{fontSize:20,fontWeight:800,color:C.text,marginBottom:20}}>🛴 {scooter.id}</div>
+      <div style={{fontSize:52,fontWeight:800,color:alert28?C.red:alert25?C.orange:C.text}}>{mm}:{ss}</div>
+      <div style={{background:C.bg,borderRadius:8,height:10,overflow:"hidden",margin:"12px 0"}}>
+        <div style={{height:"100%",borderRadius:8,width:`${pct}%`,background:pct>93?C.red:pct>83?C.orange:C.teal,transition:"width 1s linear"}}/>
+      </div>
+      {alert28&&<div style={{background:"#FFF5F5",border:`1px solid ${C.red}`,borderRadius:10,padding:"10px 14px",color:C.red,fontSize:13,marginBottom:12}}>🚨 Alerta máximo — devolva agora!</div>}
+      {alert25&&!alert28&&<div style={{background:"#FFFBEA",border:`1px solid ${C.orange}`,borderRadius:10,padding:"10px 14px",color:C.orange,fontSize:13,marginBottom:12}}>⚠️ Faltam poucos minutos — procure uma estação</div>}
+      <div style={{color:C.muted,fontSize:12,marginBottom:24}}>Tempo máximo: 30 minutos</div>
+      <button style={S.btn()} onClick={()=>onDevolver(seg)}>Devolver Patinete</button>
+    </div>
+    <p style={{...S.sectionTitle,marginTop:8}}>Estações com Vagas</p>
+    {STATIONS.filter(s=>s.vagas>0).map(st=>(
+      <div key={st.id} style={{...S.card,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontWeight:600,fontSize:13,color:C.text}}>{st.name}</div>
+          <div style={{color:C.muted,fontSize:11}}>{st.vagas} vaga{st.vagas!==1?"s":""} disponível{st.vagas!==1?"":""}</div>
+        </div>
+        <div style={{color:C.teal,fontWeight:700,fontSize:18}}>{st.vagas}/{st.total}</div>
+      </div>
+    ))}
+  </div>;
+}
+
+function ResumoScreen({scooter,tempoSeg,onFim}){
+  const mm=Math.floor(tempoSeg/60),ss=tempoSeg%60;
+  const batGasto=Math.round((tempoSeg/1800)*9);
+  return <div style={S.scroll}>
+    <div style={{...S.card,textAlign:"center",padding:"32px 20px"}}>
+      <div style={{fontSize:52,marginBottom:8}}>✅</div>
+      <div style={{fontSize:20,fontWeight:800,color:C.text}}>Viagem Concluída!</div>
+      <div style={{color:C.muted,fontSize:13,margin:"8px 0 24px"}}>Patinete devolvido com sucesso</div>
+      <div style={{background:C.bg,borderRadius:14,padding:"20px 16px",marginBottom:20}}>
+        {[["🛴 Patinete",scooter.id],["⏱️ Duração",`${mm}min ${ss}s`],["⚡ Bateria gasta",`~${batGasto}%`],["📍 Origem","Bloco A"],["📍 Destino","Bloco C"]].map(([k,v])=>(
+          <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
+            <span style={{color:C.muted,fontSize:13}}>{k}</span>
+            <span style={{fontWeight:600,color:C.text,fontSize:13}}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <button style={S.btn()} onClick={onFim}>Voltar ao Mapa</button>
+    </div>
+  </div>;
+}
+
+function HistoricoScreen(){
+  return <div style={S.scroll}>
+    <p style={S.sectionTitle}>Suas viagens</p>
+    {HISTORY.map(h=>(
+      <div key={h.id} style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontWeight:700,color:C.text,fontSize:14}}>📅 {h.date}</span>
+          <span style={S.badge(C.teal)}>Concluída</span>
+        </div>
+        {[["Origem",h.from],["Destino",h.to],["Duração",h.time],["Bateria gasta",h.bat]].map(([k,v])=>(
+          <div key={k} style={{display:"flex",justifyContent:"space-between",color:C.muted,fontSize:13,padding:"3px 0"}}>
+            <span>{k}</span><span style={{fontWeight:600,color:C.text}}>{v}</span>
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>;
+}
+
+function PerfilScreen({user,onLogout}){
+  return <div style={S.scroll}>
+    <div style={{...S.card,textAlign:"center",padding:"28px 20px"}}>
+      <div style={{width:72,height:72,borderRadius:"50%",background:C.tealLight,margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>👤</div>
+      <div style={{fontSize:18,fontWeight:800,color:C.text}}>{user.name}</div>
+      <div style={{color:C.muted,fontSize:12,margin:"4px 0 16px"}}>RA {user.ra}</div>
+      <span style={S.badge(C.teal)}>Aluno Ativo</span>
+    </div>
+    <div style={S.card}>
+      <p style={{...S.sectionTitle,marginBottom:12}}>Regras do Sistema</p>
+      {[["RN-01","Uso restrito ao campus (geofencing)"],["RN-02","Horário: 07h às 22h"],["RN-03","Máximo 30 min por viagem"],["RN-04","Sem pendências ativas para usar"],["RN-05","Bateria mínima 15% para liberar"],["RN-06","Devolução obrigatória em estação via QR"],["RN-07","Um patinete por usuário"],["RN-09","Apenas e-mails @unifeob.edu.br"]].map(([id,texto])=>(
+        <div key={id} style={{display:"flex",gap:10,marginBottom:10}}>
+          <span style={{...S.badge(C.teal),flexShrink:0}}>{id}</span>
+          <span style={{fontSize:12,color:C.text}}>{texto}</span>
+        </div>
+      ))}
+    </div>
+    <button style={S.btn("danger")} onClick={onLogout}>Sair da conta</button>
+  </div>;
+}
+
+function App(){
+  const [user,setUser]=React.useState(null);
+  const [tela,setTela]=React.useState("login");
+  const [tab,setTab]=React.useState("mapa");
+  const [flow,setFlow]=React.useState("mapa");
+  const [scooter,setScooter]=React.useState(null);
+  const [tempo,setTempo]=React.useState(0);
+
+  if(!user&&tela==="cadastro")return <CadastroScreen onCadastrado={u=>{setUser(u);setTela("login");}} onVoltar={()=>setTela("login")}/>;
+  if(!user)return <LoginScreen onLogin={u=>setUser(u)} onCadastro={()=>setTela("cadastro")}/>;
+
+  function handleReserve(sc){setScooter(sc);setFlow("reserva");setTab("mapa");}
+
+  const navItems=[
+    {id:"mapa",label:"Patinetes",icon:"🛴"},
+    {id:"historico",label:"Histórico",icon:"📋"},
+    {id:"perfil",label:"Perfil",icon:"👤"},
+  ];
+  const titles={mapa:"Mapa do Campus",reserva:"Reserva Ativa",qr:"Ler QR Code",uso:"Em Uso",resumo:"Viagem Concluída",historico:"Histórico",perfil:"Meu Perfil"};
+  const current=flow!=="mapa"?flow:tab;
+
+  return <div style={S.phone}>
+    <div style={S.header}>
+      <div>
+        <div style={{color:C.white,fontSize:18,fontWeight:700}}>🛴 {titles[current]||"Patinafeob"}</div>
+        <div style={{color:C.teal,fontSize:11,marginTop:2}}>UNIFEOB · Campus Mantiqueira</div>
+      </div>
+      <div style={{textAlign:"right"}}>
+        <div style={{color:"rgba(255,255,255,0.8)",fontSize:11}}>Olá,</div>
+        <div style={{color:C.teal,fontSize:12,fontWeight:700}}>{user.name.split(" ")[0]}</div>
+      </div>
+    </div>
+    {flow==="reserva"&&scooter&&<ReservaScreen scooter={scooter} onConfirm={()=>setFlow("qr")} onCancel={()=>setFlow("mapa")}/>}
+    {flow==="qr"&&scooter&&<QRScreen scooter={scooter} onScan={()=>setFlow("uso")}/>}
+    {flow==="uso"&&scooter&&<UsoScreen scooter={scooter} onDevolver={t=>{setTempo(t);setFlow("resumo");}}/>}
+    {flow==="resumo"&&scooter&&<ResumoScreen scooter={scooter} tempoSeg={tempo} onFim={()=>{setFlow("mapa");setScooter(null);}}/>}
+    {flow==="mapa"&&tab==="mapa"&&<MapScreen onReserve={handleReserve}/>}
+    {flow==="mapa"&&tab==="historico"&&<HistoricoScreen/>}
+    {flow==="mapa"&&tab==="perfil"&&<PerfilScreen user={user} onLogout={()=>setUser(null)}/>}
+    {flow==="mapa"&&<div style={S.navBar}>
+      {navItems.map(({id,label,icon})=>(
+        <button key={id} onClick={()=>setTab(id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 16px",color:tab===id?C.teal:C.muted,fontSize:10,fontWeight:tab===id?700:400}}>
+          <span style={{fontSize:22}}>{icon}</span>
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
