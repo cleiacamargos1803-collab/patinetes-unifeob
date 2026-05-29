@@ -41,17 +41,30 @@ const HISTORY=[
 ];
 
 const DB={
-  _users:[{name:"Cleia Gomes",ra:"26000922",email:"cleia.gomes@unifeob.edu.br",curso:"Engenharia Civil",turno:"noturno",senha:"123456"}],
+  _users:[{name:"Cleia Gomes",ra:"26000922",email:"cleia.gomes@sou.unifeob.edu.br",curso:"Engenharia Civil",turno:"noturno",senha:"123456"}],
   find(id,senha){return this._users.find(u=>(u.email===id.toLowerCase().trim()||u.ra===id.trim())&&u.senha===senha)||null;},
   exists(email,ra){return this._users.find(u=>u.email===email.toLowerCase().trim()||u.ra===ra.trim());},
   add(u){this._users.push(u);}
 };
 
-function isInstitutional(e){return e.trim().toLowerCase().endsWith("@unifeob.edu.br");}
+function isInstitutional(e){return e.trim().toLowerCase().endsWith("@sou.unifeob.edu.br");}
 function isRA(r){return /^\d{8}$/.test(r.trim());}
 function isHorario(){const h=new Date().getHours();return h>=7&&h<22;}
 function batColor(n){if(n>=50)return C.green;if(n>=20)return C.orange;return C.red;}
 function statusColor(s){if(s==="DISPONÍVEL")return C.teal;if(s==="RESERVADO")return C.orange;if(s==="EM USO")return C.blue;return C.red;}
+
+const SENHA_GERAL="123456";
+function deriveNome(email){
+  const local=(email.split("@")[0]||"").trim();
+  const nome=local.split(/[._-]/).filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+  return nome||"Aluno UNIFEOB";
+}
+function makeUser(tab,cred){
+  if(tab==="email"){
+    return {name:deriveNome(cred),ra:"—",email:cred.toLowerCase().trim(),curso:"—",turno:"—",senha:SENHA_GERAL};
+  }
+  return {name:"Aluno UNIFEOB",ra:cred.trim(),email:cred.trim()+"@sou.unifeob.edu.br",curso:"—",turno:"—",senha:SENHA_GERAL};
+}
 
 const S={
   phone:{width:"100%",maxWidth:430,minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",position:"relative"},
@@ -88,12 +101,13 @@ function LoginScreen({onLogin,onCadastro}){
     setErr("");
     if(!isHorario()){setErr("⏰ Sistema disponível apenas entre 07h e 22h.");return;}
     const cred=tab==="email"?email.trim():ra.trim();
-    if(tab==="email"&&!isInstitutional(email)){setErr("Use seu e-mail @unifeob.edu.br");return;}
+    if(tab==="email"&&!isInstitutional(email)){setErr("Use seu e-mail @sou.unifeob.edu.br");return;}
     if(tab==="ra"&&!isRA(ra)){setErr("RA deve ter 8 dígitos numéricos.");return;}
     if(senha.length<4){setErr("Senha muito curta.");return;}
     setLoading(true);
     setTimeout(()=>{
       setLoading(false);
+      if(senha===SENHA_GERAL){onLogin(DB.find(cred,senha)||makeUser(tab,cred));return;}
       const found=DB.find(cred,senha);
       if(!found){setErr("E-mail/RA ou senha incorretos.");return;}
       onLogin(found);
@@ -115,7 +129,7 @@ function LoginScreen({onLogin,onCadastro}){
       </div>
       {tab==="email"?<>
         <label style={S.label}>E-mail</label>
-        <input style={S.input} placeholder="nome@unifeob.edu.br" value={email} onChange={e=>setEmail(e.target.value)} type="email"/>
+        <input style={S.input} placeholder="nome@sou.unifeob.edu.br" value={email} onChange={e=>setEmail(e.target.value)} type="email"/>
       </>:<>
         <label style={S.label}>Registro Acadêmico (RA)</label>
         <input style={S.input} placeholder="Ex: 26000922" value={ra} onChange={e=>setRa(e.target.value)} maxLength={8}/>
@@ -150,7 +164,7 @@ function CadastroScreen({onCadastrado,onVoltar}){
     setErr("");
     if(!nome.trim()||nome.trim().split(" ").length<2){setErr("Informe nome completo.");return;}
     if(!isRA(ra)){setErr("RA deve ter 8 dígitos.");return;}
-    if(!isInstitutional(email)){setErr("E-mail deve ser @unifeob.edu.br");return;}
+    if(!isInstitutional(email)){setErr("E-mail deve ser @sou.unifeob.edu.br");return;}
     if(!curso){setErr("Selecione seu curso.");return;}
     if(senha.length<6){setErr("Senha deve ter ao menos 6 caracteres.");return;}
     if(senha!==confirma){setErr("As senhas não coincidem.");return;}
@@ -185,7 +199,7 @@ function CadastroScreen({onCadastrado,onVoltar}){
       <label style={S.label}>Registro Acadêmico (RA) *</label>
       <input style={S.input} placeholder="Ex: 26000922" maxLength={8} value={ra} onChange={e=>setRa(e.target.value.replace(/\D/g,""))}/>
       <label style={S.label}>E-mail institucional *</label>
-      <input style={S.input} placeholder="nome@unifeob.edu.br" type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
+      <input style={S.input} placeholder="nome@sou.unifeob.edu.br" type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
       <label style={S.label}>Curso *</label>
       <select style={{...S.input,appearance:"none"}} value={curso} onChange={e=>setCurso(e.target.value)}>
         <option value="">Selecione seu curso</option>
@@ -385,7 +399,7 @@ function PerfilScreen({user,onLogout}){
     </div>
     <div style={S.card}>
       <p style={{...S.sectionTitle,marginBottom:12}}>Regras do Sistema</p>
-      {[["RN-01","Uso restrito ao campus (geofencing)"],["RN-02","Horário: 07h às 22h"],["RN-03","Máximo 30 min por viagem"],["RN-04","Sem pendências ativas para usar"],["RN-05","Bateria mínima 15% para liberar"],["RN-06","Devolução obrigatória em estação via QR"],["RN-07","Um patinete por usuário"],["RN-09","Apenas e-mails @unifeob.edu.br"]].map(([id,texto])=>(
+      {[["RN-01","Uso restrito ao campus (geofencing)"],["RN-02","Horário: 07h às 22h"],["RN-03","Máximo 30 min por viagem"],["RN-04","Sem pendências ativas para usar"],["RN-05","Bateria mínima 15% para liberar"],["RN-06","Devolução obrigatória em estação via QR"],["RN-07","Um patinete por usuário"],["RN-09","Apenas e-mails @sou.unifeob.edu.br"]].map(([id,texto])=>(
         <div key={id} style={{display:"flex",gap:10,marginBottom:10}}>
           <span style={{...S.badge(C.teal),flexShrink:0}}>{id}</span>
           <span style={{fontSize:12,color:C.text}}>{texto}</span>
